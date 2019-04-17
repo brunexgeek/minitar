@@ -1,5 +1,5 @@
-#ifndef MICROTAR_H
-#define MICROTAR_H
+#ifndef MINITAR_H
+#define MINITAR_H
 
 #include <stdint.h>
 #include <sys/stat.h>
@@ -106,4 +106,4 @@ int mtar_entry_read(mtar_t *tar, void *ptr, int size);
 #endif
 
 
-#endif
+#endif /* MINITAR_H */
