@@ -4,7 +4,10 @@
 #include <stdint.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+
+#ifndef _WIN32
 #include <sys/file.h>
+#endif
 
 #define MTAR_VERSION "0.1.0"
 #define TMAGIC   "ustar"
@@ -91,10 +94,11 @@ typedef struct mtar_t {
 } mtar_t;
 
 
-int mtar_open(mtar_t *tar, const char *filename, mtar_mode_t mode);
+int mtar_open(mtar_t *tar, const char *fileName, mtar_mode_t mode);
 int mtar_close(mtar_t *tar);
 int mtar_rewind(mtar_t *tar);
 int mtar_next(mtar_t *tar);
+int mtar_find(mtar_t *tar, const char *fileName);
 int mtar_header(mtar_t *tar, const mtar_header_t **header);
 int mtar_eof(mtar_t *tar);
 int mtar_entry_eof(mtar_t *tar);

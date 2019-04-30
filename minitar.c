@@ -4,6 +4,7 @@
 #include <string.h>
 #include "minitar.h"
 
+
 static int mtar_read_header(mtar_t *tar, mtar_header_t *h);
 
 typedef struct
@@ -125,7 +126,8 @@ static int file_seek(mtar_t *tar, mtar_size_t offset)
 
 static int file_close(mtar_t *tar)
 {
-	fclose(tar->stream);
+	if (tar->stream != NULL) fclose(tar->stream);
+	tar->stream = NULL;
 	return MTAR_ESUCCESS;
 }
 
@@ -145,9 +147,8 @@ int mtar_open(mtar_t *tar, const char *filename, mtar_mode_t mode)
 	smode = "rb";
 	if (mode == MTAR_WRITE) smode = "wb";
 
-
 	tar->stream = fopen(filename, smode);
-	if (!tar->stream) return MTAR_EOPENFAIL;
+	if (tar->stream == NULL) return MTAR_EOPENFAIL;
 
 	if (mode == MTAR_READ)
 	{
@@ -226,6 +227,48 @@ ESCAPE:
 	tar->iterator.offset = UINT64_MAX;
 	tar->iterator.cursor = UINT64_MAX;
 	return err;
+}
+
+int mtar_find(mtar_t *tar, const char *fileName)
+{
+	const mtar_header_t *header;
+	int result = 0;
+	char *last = NULL;
+	size_t len1 = 0, len2 = 0;
+	char name[100 + 1];
+	char path[155 + 1];
+
+	if (fileName == NULL) return MTAR_ENOTFOUND;
+	len1 = strlen(fileName);
+
+	if (len1 > 100)
+	{
+		last = strrchr(fileName, '/');
+		len2 = (size_t) (last - fileName);
+		if (last == NULL || len2 > 155 || (len1 - len2) > 100)
+		{
+			// cannot represent the filename in USTAR
+			return MTAR_ENOTFOUND;
+		}
+		strncpy(path, fileName, len2);
+		path[len2] = 0;
+		strcpy(name, last + 1);
+		name[(len1 - len2)] = 0;
+	}
+
+	while (!mtar_eof(tar))
+	{
+		result = mtar_header(tar, &header);
+		if (result < 0) return result;
+		if (len1 <= 100 && strcmp(header->name, fileName) == 0)
+			return MTAR_ESUCCESS;
+		else
+		if (strcmp(header->name, name) == 0 && strcmp(header->path, path) == 0)
+			return MTAR_ESUCCESS;
+		mtar_next(tar);
+	}
+
+	return MTAR_ENOTFOUND;
 }
 
 int mtar_header(mtar_t *tar, const mtar_header_t **header)
